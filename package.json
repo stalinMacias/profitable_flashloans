@@ -10,6 +10,7 @@
   "author": "Stalin Macias",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.27.2",
     "dotenv": "^16.0.3",
     "web3": "^1.2.9"
   }
