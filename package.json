@@ -1,0 +1,16 @@
+{
+  "name": "profitable_flashloans",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Stalin Macias",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "web3": "^1.2.9"
+  }
+}
