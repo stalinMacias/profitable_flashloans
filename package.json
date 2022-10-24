@@ -10,6 +10,8 @@
   "author": "Stalin Macias",
   "license": "ISC",
   "dependencies": {
+    "@uniswap/sdk": "^2.0.5",
+    "axios": "^0.27.2",
     "dotenv": "^16.0.3",
     "web3": "^1.2.9"
   }
