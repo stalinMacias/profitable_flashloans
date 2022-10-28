@@ -13,7 +13,10 @@ import "./IWeth.sol";
 
 contract FlashLoan is ICallee, DydxFlashloanBase {
     // Direction for the arbitrage
-    enum Direction { KyberToUniswap, UniswapToKyber }
+    enum Direction { 
+        KyberToUniswap, // 0 -> Buy ETH on Kyber, Sell it on Uniswap
+        UniswapToKyber  // 1 -> But ETH on Uniswap, Sell in on Kyber
+    }
 
     // Custom Data that will be sent over the call action
     struct ArbInfo {
@@ -39,6 +42,9 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
         dai = IERC20(daiAddress);
     }
 
+    // fallback function <--> Compatible Syntaxis for Solidity v0.5.0
+    function() external payable {}
+
     // This is the function that will be called postLoan
     // i.e. Encode the logic to handle your flashloaned funds here
     // The arbitrage opeartion will be executed in this function
@@ -49,8 +55,38 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
     ) public {
         ArbInfo memory arbInfo = abi.decode(data, (ArbInfo));
 
-        // Validate there is enough DAI balance on this contract to repay the dy/dx flashloan
+        // Get the DAI Balance on this contract after the flashloan was executed!
         uint daiBalance = dai.balanceOf(address(this));
+
+        // Determine the direction of the Arbitrage Operation
+        if(arbInfo.direction == Direction.KyberToUniswap) {
+            // Buy ETH on Kyber, Sell it on Uniswap
+
+            // BUY ETH on Kyber
+            dai.approve(kyber,daiBalance);
+            (uint expectedRate, ) = kyber.expectedRate(
+                dai, 
+                IERC20(KYBER_ETH_ADDRESS), 
+                balanceDai
+            );
+            kyber.swapTokenToEther(dai, balanceDai, expectedRate);
+
+            // Sell ETH on Uniswap
+            address[] memory path = new address[](2);   // path array to swap from ETH to DAI
+            path[0] = address(weth);
+            path[1] = address(dai);
+            // Calculate the minium amount of DAI in exchange for all the ETH this contract is holding
+            uint[] memory minOuts = uniswap.getAmountsOut(address(this).balance, path); // Will return only one value, because the path array only makes one swap <-> From WETH to DAI
+            // Swap all the ETH for the most possible amount of DAI
+            uniswap.swapExactETHForTokens.value(address(this).balance)(
+                minOuts[1], 
+                path, 
+                address(this), 
+                now
+            );
+        }
+
+        // Validate there is enough DAI balance on this contract to repay the dy/dx flashloan
         require(daiBalance >= arbInfo.repayAmount, "Not enough DAI to repay the dy/dx flashloan");
 
     }
