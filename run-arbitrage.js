@@ -11,6 +11,9 @@ const web3 = new Web3(
   new Web3.providers.WebsocketProvider(process.env.INFURA_API_URL)
 );
 
+// Indicate web3 what private key should use when signing transactions
+web3.eth.accounts.wallet.add(process.env.PRIVATE_KEY)
+
 
 // Create an instance of the KyberNetworkProxy smart contract
 const kyber = new web3.eth.Contract(
