@@ -64,12 +64,14 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
 
             // BUY ETH on Kyber
             dai.approve(kyber,daiBalance);
+            // Calculate the expectedRate of swapping all the DAI balance this contract is holding for ETH
             (uint expectedRate, ) = kyber.expectedRate(
                 dai, 
                 IERC20(KYBER_ETH_ADDRESS), 
-                balanceDai
+                daiBalance
             );
-            kyber.swapTokenToEther(dai, balanceDai, expectedRate);
+            // Swap all the DAI balance this contract is holding for ETH
+            kyber.swapTokenToEther(dai, daiBalance, expectedRate);
 
             // Sell ETH on Uniswap
             address[] memory path = new address[](2);   // path array to swap from ETH to DAI
@@ -77,13 +79,45 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
             path[1] = address(dai);
             // Calculate the minium amount of DAI in exchange for all the ETH this contract is holding
             uint[] memory minOuts = uniswap.getAmountsOut(address(this).balance, path); // Will return only one value, because the path array only makes one swap <-> From WETH to DAI
-            // Swap all the ETH for the most possible amount of DAI
+            // Swap all the ETH balance this contract is holding for the most possible amount of DAI
             uniswap.swapExactETHForTokens.value(address(this).balance)(
                 minOuts[1], 
                 path, 
                 address(this), 
                 now
             );
+        } else {
+            // Buy ETH on Uniswap, Sell it on Kyber
+
+            // BUY ETH on Uniswap
+            dai.approve(uniswap,daiBalance);
+            address[] memory path = new address[](2);   // path array to swap from DAI to ETH
+            path[0] = address(dai);
+            path[1] = address(weth);
+            // Calculate the minium amount of ETH in exchange for all the DAI this contract is holding
+            uint[] memory minOuts = uniswap.getAmountsOut(daiBalance, path); // Will return only one value, because the path array only makes one swap <-> From DAI to WETH
+            // Swap all the DAI balance this contract is holding for the most possible amount of ETH
+            uniswap.swapExactTokensForETH(
+                balanceDai,
+                minOuts[1], 
+                path, 
+                address(this), 
+                now
+            );
+
+            // Sell ETH on Kyber
+            // Calculate the expectedRate of swapping all the ETH balance this contract is holding for DAI
+            (uint expectedRate, ) = kyber.expectedRate(
+                IERC20(KYBER_ETH_ADDRESS),
+                dai,
+                address(this).balance
+            );
+            // Swap all the ETH balance this contract is holding for DAI
+            kyber.swapEtherToToken.value(address(this).balance)(
+                dai,
+                expectedRate
+            );
+
         }
 
         // Validate there is enough DAI balance on this contract to repay the dy/dx flashloan
