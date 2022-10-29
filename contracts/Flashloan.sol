@@ -72,9 +72,9 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
             // Buy ETH on Kyber, Sell it on Uniswap
 
             // BUY ETH on Kyber
-            dai.approve(kyber,daiBalance);
+            dai.approve(address(kyber),daiBalance);
             // Calculate the expectedRate of swapping all the DAI balance this contract is holding for ETH
-            (uint expectedRate, ) = kyber.expectedRate(
+            (uint expectedRate, ) = kyber.getExpectedRate(
                 dai, 
                 IERC20(KYBER_ETH_ADDRESS), 
                 daiBalance
@@ -99,7 +99,7 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
             // Buy ETH on Uniswap, Sell it on Kyber
 
             // BUY ETH on Uniswap
-            dai.approve(uniswap,daiBalance);
+            dai.approve(address(uniswap),daiBalance);
             address[] memory path = new address[](2);   // path array to swap from DAI to ETH
             path[0] = address(dai);
             path[1] = address(weth);
@@ -107,7 +107,7 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
             uint[] memory minOuts = uniswap.getAmountsOut(daiBalance, path); // Will return only one value, because the path array only makes one swap <-> From DAI to WETH
             // Swap all the DAI balance this contract is holding for the most possible amount of ETH
             uniswap.swapExactTokensForETH(
-                balanceDai,
+                daiBalance,
                 minOuts[1], 
                 path, 
                 address(this), 
@@ -116,7 +116,7 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
 
             // Sell ETH on Kyber
             // Calculate the expectedRate of swapping all the ETH balance this contract is holding for DAI
-            (uint expectedRate, ) = kyber.expectedRate(
+            (uint expectedRate, ) = kyber.getExpectedRate(
                 IERC20(KYBER_ETH_ADDRESS),
                 dai,
                 address(this).balance
@@ -163,7 +163,7 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
         operations[0] = _getWithdrawAction(marketId, _amount);
         operations[1] = _getCallAction(
             // Encode ArbInfo for callFunction
-            abi.encode(ArbInfo({Direction: _direction, repayAmount: repayAmount}))
+            abi.encode(ArbInfo({direction: _direction, repayAmount: repayAmount}))
         );
         operations[2] = _getDepositAction(marketId, repayAmount);
 

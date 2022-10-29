@@ -1,3 +1,4 @@
+const path = require('path');
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -33,7 +34,7 @@ module.exports = {
    *
    * $ truffle test --network <network-name>
    */
-
+  contracts_build_directory: path.join(__dirname, "./contracts/builds/"),
   networks: {
     // Useful for testing. The `development` name is special - truffle uses it by default
     // if it's defined here and no other network is specified at the command line.
