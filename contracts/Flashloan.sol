@@ -11,7 +11,7 @@ import "./IUniswapV2Router02.sol";
 import "./IWeth.sol";
 
 
-contract FlashLoan is ICallee, DydxFlashloanBase {
+contract Flashloan is ICallee, DydxFlashloanBase {
     // Direction for the arbitrage
     enum Direction { 
         KyberToUniswap, // 0 -> Buy ETH on Kyber, Sell it on Uniswap
@@ -139,7 +139,7 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
     }
 
     // This function is called to initiate the entire process, ask for the flashloan, then run the arbitrage operation, repay the flashloan and withdraw the profits
-    function initiateFlashLoan(
+    function initiateFlashloan(
         address _solo, 
         address _token, 
         uint256 _amount,
