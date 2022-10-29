@@ -29,17 +29,26 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
     IWeth weth;
     IERC20 dai;
     address constant KYBER_ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address beneficiary;
+
+    event NewArbitrage(
+        Direction direction,
+        uint profit,
+        uint date
+    );
 
     constructor(
         address kyberAddress,
         address uniswapAddress,
         address wethAddress,
         address daiAddress,
+        address beneficiaryAddress
     ) public {
         kyber = IKyberNetworkProxy(kyberAddress);
         uniswap = IUniswapV2Router02(uniswapAddress);
         weth = IWeth(wethAddress);
         dai = IERC20(daiAddress);
+        beneficiary = beneficiaryAddress;
     }
 
     // fallback function <--> Compatible Syntaxis for Solidity v0.5.0
@@ -117,12 +126,16 @@ contract FlashLoan is ICallee, DydxFlashloanBase {
                 dai,
                 expectedRate
             );
-
         }
 
-        // Validate there is enough DAI balance on this contract to repay the dy/dx flashloan
-        require(daiBalance >= arbInfo.repayAmount, "Not enough DAI to repay the dy/dx flashloan");
+        // Validate there is enough DAI balance on this contract after the arbitrage operation to repay the dy/dx flashloan
+        require(dai.balanceOf(address(this)) >= arbInfo.repayAmount, "Not enough DAI to repay the dy/dx flashloan");
 
+        // Withdraw the profit from the flashloan and send it to an address of our own
+        uint profit = dai.balanceOf(address(this)) - arbInfo.repayAmount;
+        dai.transferFrom(address(this), beneficiary, profit);
+
+        emit NewArbitrage(arbInfo.direction, profit, now);
     }
 
     // This function is called to initiate the entire process, ask for the flashloan, then run the arbitrage operation, repay the flashloan and withdraw the profits
